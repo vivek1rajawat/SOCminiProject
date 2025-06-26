@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-// ========== Control Register ==========
+// ===== Control Register =====
 module ControlRegister (
     input clk,
     input rst,
@@ -12,7 +12,9 @@ module ControlRegister (
 );
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        tx_en <= 0; rx_en <= 0; reset <= 0;
+        tx_en <= 0;
+        rx_en <= 0;
+        reset <= 0;
     end else if (wr_en) begin
         tx_en <= data_in[0];
         rx_en <= data_in[1];
@@ -21,7 +23,7 @@ always @(posedge clk or posedge rst) begin
 end
 endmodule
 
-// ========== UART Transmitter ==========
+// ===== UART Transmitter =====
 module UART_TX (
     input clk,
     input tx_en,
@@ -43,13 +45,15 @@ module UART_TX (
 
     always @(posedge clk) begin
         if (!tx_en) begin
-            state <= IDLE; tx_line <= 1; tx_done <= 0;
+            state <= IDLE;
+            tx_line <= 1;
+            tx_done <= 0;
         end else begin
-            case(state)
+            case (state)
                 IDLE: begin
                     tx_done <= 0;
                     if (tx_start) begin
-                        shift_reg <= {1'b1, tx_data, 1'b0};
+                        shift_reg <= {1'b1, tx_data, 1'b0}; // stop + data + start
                         bit_index <= 0;
                         state <= START;
                     end
@@ -61,7 +65,8 @@ module UART_TX (
                 DATA: begin
                     tx_line <= shift_reg[bit_index];
                     bit_index <= bit_index + 1;
-                    if (bit_index == 7) state <= STOP;
+                    if (bit_index == 7)
+                        state <= STOP;
                 end
                 STOP: begin
                     tx_line <= 1;
@@ -76,7 +81,7 @@ module UART_TX (
     end
 endmodule
 
-// ========== UART Receiver ==========
+// ===== UART Receiver =====
 module UART_RX (
     input clk,
     input rx_en,
@@ -100,10 +105,11 @@ module UART_RX (
             state <= IDLE;
             rx_done <= 0;
         end else begin
-            case(state)
+            case (state)
                 IDLE: begin
                     rx_done <= 0;
-                    if (!rx_line) state <= START;
+                    if (!rx_line)
+                        state <= START;
                 end
                 START: begin
                     bit_index <= 0;
@@ -112,7 +118,8 @@ module UART_RX (
                 DATA: begin
                     shift_reg[bit_index] <= rx_line;
                     bit_index <= bit_index + 1;
-                    if (bit_index == 7) state <= STOP;
+                    if (bit_index == 7)
+                        state <= STOP;
                 end
                 STOP: begin
                     if (rx_line == 1) begin
@@ -130,7 +137,7 @@ module UART_RX (
     end
 endmodule
 
-// ========== UART System ==========
+// ===== UART Top-Level System =====
 module UART_System (
     input clk,
     input rst,
